@@ -121,9 +121,19 @@ QStringList Convert( const QList< quint32 > &input )
             pos = line.indexOf( "\t" );
             if( pos > 0 && line.size() > pos - 1 && line.startsWith( "b", Qt::CaseInsensitive ) )
             {
+                const QString &numStr = line.mid( pos );
+                bool ok = false;
+                quint32 num = numStr.toLong( &ok, 16 );
+
+                // add comments for negative branches
+                if( ok && ( num & 0x80000000 ) )
+                {
+                    line += QString( "\t@ -0x%1" ).arg( 0x100000000ull - num, 0, 16 );
+                }
                 line.insert( pos + 1, "0x" );
             }
         }
+        line.replace( ";", "@" );
 
 
         ret << line;
@@ -149,11 +159,11 @@ QList< quint32 > Convert( const QStringList &input )
     foreach( QString str, input )
     {
         // remove comments
-        int pos = str.indexOf( ";" );
+        /*int pos = str.indexOf( ";" );
         if( pos > 0 )
         {
             str.resize( pos );
-        }
+        }*/
 
         // add it
         sFile += "\t" + str + "\n";
@@ -361,9 +371,19 @@ QStringList ConvertThumb( const QList< quint16 > &input )
             pos = line.indexOf( "\t" );
             if( pos > 0 && line.size() > pos - 1 && line.startsWith( "b", Qt::CaseInsensitive ) )
             {
+                const QString &numStr = line.mid( pos );
+                bool ok = false;
+                quint32 num = numStr.toLong( &ok, 16 );
+
+                // add comments for negative branches
+                if( ok && ( num & 0x80000000 ) )
+                {
+                    line += QString( "\t@ -0x%1" ).arg( 0x100000000ull - num, 0, 16 );
+                }
                 line.insert( pos + 1, "0x" );
             }
         }
+        line.replace( ";", "@" );
 
         ret << line;
     }
@@ -390,11 +410,11 @@ QList< quint16 > ConvertThumb( const QStringList &input )
     foreach( QString str, input )
     {
         // remove comments
-        int pos = str.indexOf( ";" );
+        /*int pos = str.indexOf( ";" );
         if( pos > 0 )
         {
             str.resize( pos );
-        }
+        }*/
 
         // add it
         sFile += "\t" + str + "\n";
