@@ -119,7 +119,7 @@ QStringList Convert( const QList< quint32 > &input )
         {
             line.resize( pos );
             pos = line.indexOf( "\t" );
-            if( pos > 0 && line.size() > pos - 1 )
+            if( pos > 0 && line.size() > pos - 1 && line.startsWith( "b", Qt::CaseInsensitive ) )
             {
                 line.insert( pos + 1, "0x" );
             }
@@ -359,7 +359,7 @@ QStringList ConvertThumb( const QList< quint16 > &input )
         {
             line.resize( pos );
             pos = line.indexOf( "\t" );
-            if( pos > 0 && line.size() > pos - 1 )
+            if( pos > 0 && line.size() > pos - 1 && line.startsWith( "b", Qt::CaseInsensitive ) )
             {
                 line.insert( pos + 1, "0x" );
             }
