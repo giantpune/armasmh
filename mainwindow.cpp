@@ -14,23 +14,12 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi( this );
 
     ui->plainTextEdit_hex->setMaximumWidth( ui->plainTextEdit_hex->fontMetrics().width( "00000000        " ) );
-
-    // setup dir for tmp .o and .s
-    QFileInfo f( QDir::currentPath() + "/tmp" );
-    if( !f.exists() && !QDir().mkpath( QDir::currentPath() + "/tmp" ) )
-    {
-        qDebug() << "error making tmp directory";
-    }
-
-
-
 }
 
 MainWindow::~MainWindow()
 {
-    QFile( QDir::currentPath() + "/tmp/asm.o" ).remove();
-    QFile( QDir::currentPath() + "/tmp/asm.s" ).remove();
-    QDir( QDir::currentPath() ).rmdir( "tmp" );
+    QFile( AsmHandler::asmFileName ).remove();
+    QFile( AsmHandler::objFileName ).remove();
     delete ui;
 }
 

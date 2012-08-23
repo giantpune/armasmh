@@ -6,6 +6,11 @@
 
 namespace AsmHandler
 {
+
+QString asmFileName = QString( "/dev/shm/armasmh_%1.s" ).arg( getpid() );
+QString objFileName = QString( "/dev/shm/armasmh_%1.o" ).arg( getpid() );
+
+
 QStringList Convert( const QList< quint32 > &input )
 {
     if( !input.size() )
@@ -26,7 +31,7 @@ QStringList Convert( const QList< quint32 > &input )
         sFile += QString( "    .long 0x%1\n" ).arg( n, 8, 16, QChar( '0' ) );
     }
 
-    if( !WriteFile( QDir::currentPath() + "/tmp/asm.s", sFile.toLatin1().constData() ) )
+    if( !WriteFile( asmFileName, sFile.toLatin1().constData() ) )
     {
         return QStringList();
     }
@@ -34,8 +39,8 @@ QStringList Convert( const QList< quint32 > &input )
     QProcess p;
     p.setProcessChannelMode( QProcess::MergedChannels );
     QStringList args = QStringList()
-            << "-o" << QDir::currentPath() + "/tmp/asm.o"
-            << QDir::currentPath() + "/tmp/asm.s";
+            << "-o" << objFileName
+            << asmFileName;
 
     QString prog( QDir::currentPath() + "/tools/as" );
 
@@ -53,7 +58,7 @@ QStringList Convert( const QList< quint32 > &input )
     }
 
     prog = QDir::currentPath() + "/tools/objdump";
-    args = QStringList() << "-D" << "--section=.text" << QDir::currentPath() + "/tmp/asm.o";
+    args = QStringList() << "-D" << "--section=.text" << objFileName;
     p.start( prog, args );
     if( !p.waitForFinished( -1 ) )
     {
@@ -169,7 +174,7 @@ QList< quint32 > Convert( const QStringList &input )
         sFile += "\t" + str + "\n";
     }
 
-    if( !WriteFile( QDir::currentPath() + "/tmp/asm.s", sFile.toLatin1().constData() ) )
+    if( !WriteFile( asmFileName, sFile.toLatin1().constData() ) )
     {
         return QList< quint32 >();
     }
@@ -177,8 +182,8 @@ QList< quint32 > Convert( const QStringList &input )
     QProcess p;
     p.setProcessChannelMode( QProcess::MergedChannels );
     QStringList args = QStringList()
-            << "-o" << QDir::currentPath() + "/tmp/asm.o"
-            << QDir::currentPath() + "/tmp/asm.s";
+            << "-o" << objFileName
+            << asmFileName;
 
     QString prog( QDir::currentPath() + "/tools/as" );
 
@@ -196,7 +201,7 @@ QList< quint32 > Convert( const QStringList &input )
     }
 
     prog = QDir::currentPath() + "/tools/objdump";
-    args = QStringList() << "-D" << "--section=.text" << QDir::currentPath() + "/tmp/asm.o";
+    args = QStringList() << "-D" << "--section=.text" << objFileName;
     p.start( prog, args );
     if( !p.waitForFinished( -1 ) )
     {
@@ -276,7 +281,7 @@ QStringList ConvertThumb( const QList< quint16 > &input )
         sFile += QString( "    .short 0x%1\n" ).arg( n, 4, 16, QChar( '0' ) );
     }
 
-    if( !WriteFile( QDir::currentPath() + "/tmp/asm.s", sFile.toLatin1().constData() ) )
+    if( !WriteFile( asmFileName, sFile.toLatin1().constData() ) )
     {
         return QStringList();
     }
@@ -284,8 +289,8 @@ QStringList ConvertThumb( const QList< quint16 > &input )
     QProcess p;
     p.setProcessChannelMode( QProcess::MergedChannels );
     QStringList args = QStringList()
-            << "-o" << QDir::currentPath() + "/tmp/asm.o"
-            << QDir::currentPath() + "/tmp/asm.s";
+            << "-o" << objFileName
+            << asmFileName;
 
     QString prog( QDir::currentPath() + "/tools/as" );
 
@@ -303,7 +308,7 @@ QStringList ConvertThumb( const QList< quint16 > &input )
     }
 
     prog = QDir::currentPath() + "/tools/objdump";
-    args = QStringList() << "-D" << "--section=.text" << QDir::currentPath() + "/tmp/asm.o";
+    args = QStringList() << "-D" << "--section=.text" << objFileName;
     p.start( prog, args );
     if( !p.waitForFinished( -1 ) )
     {
@@ -420,7 +425,7 @@ QList< quint16 > ConvertThumb( const QStringList &input )
         sFile += "\t" + str + "\n";
     }
 
-    if( !WriteFile( QDir::currentPath() + "/tmp/asm.s", sFile.toLatin1().constData() ) )
+    if( !WriteFile( asmFileName, sFile.toLatin1().constData() ) )
     {
         return QList< quint16 >();
     }
@@ -428,8 +433,8 @@ QList< quint16 > ConvertThumb( const QStringList &input )
     QProcess p;
     p.setProcessChannelMode( QProcess::MergedChannels );
     QStringList args = QStringList()
-            << "-o" << QDir::currentPath() + "/tmp/asm.o"
-            << QDir::currentPath() + "/tmp/asm.s";
+            << "-o" << objFileName
+            << asmFileName;
 
     QString prog( QDir::currentPath() + "/tools/as" );
 
@@ -447,7 +452,7 @@ QList< quint16 > ConvertThumb( const QStringList &input )
     }
 
     prog = QDir::currentPath() + "/tools/objdump";
-    args = QStringList() << "-D" << "--section=.text" << QDir::currentPath() + "/tmp/asm.o";
+    args = QStringList() << "-D" << "--section=.text" << objFileName;
     p.start( prog, args );
     if( !p.waitForFinished( -1 ) )
     {
