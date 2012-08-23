@@ -10,6 +10,54 @@ namespace AsmHandler
 QString asmFileName = QString( "/dev/shm/armasmh_%1.s" ).arg( getpid() );
 QString objFileName = QString( "/dev/shm/armasmh_%1.o" ).arg( getpid() );
 
+static bool RunAS()
+{
+    QProcess p;
+    p.setProcessChannelMode( QProcess::MergedChannels );
+    QStringList args = QStringList()
+            << "-o" << objFileName
+            << asmFileName;
+
+    QString prog( QDir::currentPath() + "/tools/as" );
+
+    p.start( prog, args );
+    if( !p.waitForFinished( -1 ) )
+    {
+        qDebug() << "failed to start" << prog;
+        return false;
+    }
+    if( p.exitStatus() != QProcess::NormalExit || p.exitCode() )
+    {
+        QByteArray output = p.readAllStandardOutput();
+        qDebug() << prog << "didn\'t run right:" << output;
+        return false;
+    }
+    return true;
+}
+
+static bool RunOBJDUMP( QByteArray &output )
+{
+    QProcess p;
+    p.setProcessChannelMode( QProcess::MergedChannels );
+    QStringList args = QStringList() << "-D" << "--section=.text" << objFileName;
+
+    QString prog( QDir::currentPath() + "/tools/objdump" );
+
+    p.start( prog, args );
+    if( !p.waitForFinished( -1 ) )
+    {
+        qDebug() << "failed to start" << prog;
+        return false;
+    }
+    output = p.readAllStandardOutput();
+    if( p.exitStatus() != QProcess::NormalExit || p.exitCode() )
+    {
+        qDebug() << prog << "didn\'t run right:" << output;
+        return false;
+    }
+    return true;
+}
+
 
 QStringList Convert( const QList< quint32 > &input )
 {
@@ -31,48 +79,16 @@ QStringList Convert( const QList< quint32 > &input )
         sFile += QString( "    .long 0x%1\n" ).arg( n, 8, 16, QChar( '0' ) );
     }
 
-    if( !WriteFile( asmFileName, sFile.toLatin1().constData() ) )
+    QByteArray objdumpOut;
+
+    if( !WriteFile( asmFileName, sFile.toLatin1().constData() )
+            || !RunAS()
+            || !RunOBJDUMP( objdumpOut ) )
     {
         return QStringList();
     }
 
-    QProcess p;
-    p.setProcessChannelMode( QProcess::MergedChannels );
-    QStringList args = QStringList()
-            << "-o" << objFileName
-            << asmFileName;
-
-    QString prog( QDir::currentPath() + "/tools/as" );
-
-    p.start( prog, args );
-    if( !p.waitForFinished( -1 ) )
-    {
-        qDebug() << "failed to start" << prog;
-        return QStringList();
-    }
-    if( p.exitStatus() != QProcess::NormalExit || p.exitCode() )
-    {
-        QByteArray output = p.readAllStandardOutput();
-        qDebug() << "as didn\'t run right:" << output;
-        return QStringList();
-    }
-
-    prog = QDir::currentPath() + "/tools/objdump";
-    args = QStringList() << "-D" << "--section=.text" << objFileName;
-    p.start( prog, args );
-    if( !p.waitForFinished( -1 ) )
-    {
-        qDebug() << "failed to start" << prog;
-        return QStringList();
-    }
-    if( p.exitStatus() != QProcess::NormalExit || p.exitCode() )
-    {
-        QByteArray output = p.readAllStandardOutput();
-        qDebug() << "objdump didn\'t run right:" << output;
-        return QStringList();
-    }
-
-    QString output( p.readAllStandardOutput() );
+    QString output( objdumpOut );
     int pos = output.indexOf( "<MyFunction>" );
     if( pos < 0 )
     {
@@ -139,8 +155,6 @@ QStringList Convert( const QList< quint32 > &input )
             }
         }
         line.replace( ";", "@" );
-
-
         ret << line;
     }
 
@@ -163,59 +177,20 @@ QList< quint32 > Convert( const QStringList &input )
             ;
     foreach( QString str, input )
     {
-        // remove comments
-        /*int pos = str.indexOf( ";" );
-        if( pos > 0 )
-        {
-            str.resize( pos );
-        }*/
-
         // add it
         sFile += "\t" + str + "\n";
     }
 
-    if( !WriteFile( asmFileName, sFile.toLatin1().constData() ) )
+    QByteArray objdumpOut;
+
+    if( !WriteFile( asmFileName, sFile.toLatin1().constData() )
+            || !RunAS()
+            || !RunOBJDUMP( objdumpOut ) )
     {
         return QList< quint32 >();
     }
 
-    QProcess p;
-    p.setProcessChannelMode( QProcess::MergedChannels );
-    QStringList args = QStringList()
-            << "-o" << objFileName
-            << asmFileName;
-
-    QString prog( QDir::currentPath() + "/tools/as" );
-
-    p.start( prog, args );
-    if( !p.waitForFinished( -1 ) )
-    {
-        qDebug() << "failed to start" << prog;
-        return QList< quint32 >();
-    }
-    if( p.exitStatus() != QProcess::NormalExit || p.exitCode() )
-    {
-        QByteArray output = p.readAllStandardOutput();
-        qDebug() << "as didn\'t run right:" << output;
-        return QList< quint32 >();
-    }
-
-    prog = QDir::currentPath() + "/tools/objdump";
-    args = QStringList() << "-D" << "--section=.text" << objFileName;
-    p.start( prog, args );
-    if( !p.waitForFinished( -1 ) )
-    {
-        qDebug() << "failed to start" << prog;
-        return QList< quint32 >();
-    }
-    if( p.exitStatus() != QProcess::NormalExit || p.exitCode() )
-    {
-        QByteArray output = p.readAllStandardOutput();
-        qDebug() << "objdump didn\'t run right:" << output;
-        return QList< quint32 >();
-    }
-
-    QString output( p.readAllStandardOutput() );
+    QString output( objdumpOut );
     int pos = output.indexOf( "<MyFunction>" );
     if( pos < 0 )
     {
@@ -253,7 +228,6 @@ QList< quint32 > Convert( const QStringList &input )
             qDebug() << "unexpected output" << output;
             return QList< quint32 >();
         }
-
         ret << num;
     }
 
@@ -281,48 +255,16 @@ QStringList ConvertThumb( const QList< quint16 > &input )
         sFile += QString( "    .short 0x%1\n" ).arg( n, 4, 16, QChar( '0' ) );
     }
 
-    if( !WriteFile( asmFileName, sFile.toLatin1().constData() ) )
+    QByteArray objdumpOut;
+
+    if( !WriteFile( asmFileName, sFile.toLatin1().constData() )
+            || !RunAS()
+            || !RunOBJDUMP( objdumpOut ) )
     {
         return QStringList();
     }
 
-    QProcess p;
-    p.setProcessChannelMode( QProcess::MergedChannels );
-    QStringList args = QStringList()
-            << "-o" << objFileName
-            << asmFileName;
-
-    QString prog( QDir::currentPath() + "/tools/as" );
-
-    p.start( prog, args );
-    if( !p.waitForFinished( -1 ) )
-    {
-        qDebug() << "failed to start" << prog;
-        return QStringList();
-    }
-    if( p.exitStatus() != QProcess::NormalExit || p.exitCode() )
-    {
-        QByteArray output = p.readAllStandardOutput();
-        qDebug() << "as didn\'t run right:" << output;
-        return QStringList();
-    }
-
-    prog = QDir::currentPath() + "/tools/objdump";
-    args = QStringList() << "-D" << "--section=.text" << objFileName;
-    p.start( prog, args );
-    if( !p.waitForFinished( -1 ) )
-    {
-        qDebug() << "failed to start" << prog;
-        return QStringList();
-    }
-    if( p.exitStatus() != QProcess::NormalExit || p.exitCode() )
-    {
-        QByteArray output = p.readAllStandardOutput();
-        qDebug() << "objdump didn\'t run right:" << output;
-        return QStringList();
-    }
-
-    QString output( p.readAllStandardOutput() );
+    QString output( objdumpOut );
     int pos = output.indexOf( "<MyFunction>" );
     if( pos < 0 )
     {
@@ -414,59 +356,20 @@ QList< quint16 > ConvertThumb( const QStringList &input )
             ;
     foreach( QString str, input )
     {
-        // remove comments
-        /*int pos = str.indexOf( ";" );
-        if( pos > 0 )
-        {
-            str.resize( pos );
-        }*/
-
         // add it
         sFile += "\t" + str + "\n";
     }
 
-    if( !WriteFile( asmFileName, sFile.toLatin1().constData() ) )
+    QByteArray objdumpOut;
+
+    if( !WriteFile( asmFileName, sFile.toLatin1().constData() )
+            || !RunAS()
+            || !RunOBJDUMP( objdumpOut ) )
     {
         return QList< quint16 >();
     }
 
-    QProcess p;
-    p.setProcessChannelMode( QProcess::MergedChannels );
-    QStringList args = QStringList()
-            << "-o" << objFileName
-            << asmFileName;
-
-    QString prog( QDir::currentPath() + "/tools/as" );
-
-    p.start( prog, args );
-    if( !p.waitForFinished( -1 ) )
-    {
-        qDebug() << "failed to start" << prog;
-        return QList< quint16 >();
-    }
-    if( p.exitStatus() != QProcess::NormalExit || p.exitCode() )
-    {
-        QByteArray output = p.readAllStandardOutput();
-        qDebug() << "as didn\'t run right:" << output;
-        return QList< quint16 >();
-    }
-
-    prog = QDir::currentPath() + "/tools/objdump";
-    args = QStringList() << "-D" << "--section=.text" << objFileName;
-    p.start( prog, args );
-    if( !p.waitForFinished( -1 ) )
-    {
-        qDebug() << "failed to start" << prog;
-        return QList< quint16 >();
-    }
-    if( p.exitStatus() != QProcess::NormalExit || p.exitCode() )
-    {
-        QByteArray output = p.readAllStandardOutput();
-        qDebug() << "objdump didn\'t run right:" << output;
-        return QList< quint16 >();
-    }
-
-    QString output( p.readAllStandardOutput() );
+    QString output( objdumpOut );
     int pos = output.indexOf( "<MyFunction>" );
     if( pos < 0 )
     {
