@@ -7,6 +7,10 @@
 
 namespace AsmHandler
 {
+
+extern QString asmFileName;
+extern QString objFileName;
+
 QStringList Convert( const QList< quint32 > &input );
 QList< quint32 > Convert( const QStringList &input );
 
