@@ -25,6 +25,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_pushButton_toAsm_clicked()
 {
+    ui->plainTextEdit_log->clear();
     QStringList asmTxt;
     if( ui->checkBox_thumb->isChecked() )
     {
@@ -73,6 +74,7 @@ QList<quint16>MainWindow::ParseHexTxtThumb()
 
 void MainWindow::on_pushButton_toHex_clicked()
 {
+    ui->plainTextEdit_log->clear();
     QString doc = ui->plainTextEdit_asm->document()->toPlainText();
     QStringList lines = doc.split( "\n", QString::SkipEmptyParts );
 
@@ -128,22 +130,25 @@ void MainWindow::on_pushButton_flipEndian_clicked()
     }
 }
 
-void MainWindow::OutputMessage( QtMsgType type, const QString &msg )
+void MainWindow::OutputMessage( QtMsgType type, QString msg )
 {
     bool needToScroll = ui->plainTextEdit_log->verticalScrollBar()->value() == ui->plainTextEdit_log->verticalScrollBar()->maximum();//if the text window is already showing the last line
     switch( type )
     {
     case QtDebugMsg:
-        ui->plainTextEdit_log->appendHtml( QString( msg ) );
+        msg.replace( "\n", "<br />" );
+        ui->plainTextEdit_log->appendHtml( msg );
         break;
     case QtWarningMsg:
         {
+            msg.replace( "\n", "<br />" );
             QString htmlString = "<b><text style=\"color:#0000ff\">" + msg + "</text></b>";
             ui->plainTextEdit_log->appendHtml( htmlString );
         }
         break;
     case QtCriticalMsg:
         {
+            msg.replace( "\n", "<br />" );
             QString htmlString = "<b><text style=\"color:#ff0000\">" + msg + "</text></b>";
             ui->plainTextEdit_log->appendHtml( htmlString );
         }

@@ -5,6 +5,7 @@
 #include <QMainWindow>
 #include <QMetaType>
 #include <QScrollBar>
+#include <QString>
 
 namespace Ui {
 class MainWindow;
@@ -24,7 +25,9 @@ private slots:
     void on_pushButton_flipEndian_clicked();
 
 public slots:
-    void OutputMessage( QtMsgType type, const QString &msg );
+
+    // don't use a references here because the message handler modifies the string
+    void OutputMessage( QtMsgType type, QString msg );
 
 private:
     Ui::MainWindow *ui;
