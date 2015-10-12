@@ -1,0 +1,1 @@
+Front-end for gnu assembler and objdump to speed up converting hex to asm and back.  Requires a recent binutils where "-D" disassembles ".word" symbols, too.  64bin linux binaries for the tools are included in this project.  Replace them with ones for your own setup.
